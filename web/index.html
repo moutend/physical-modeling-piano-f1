@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Physical Modeling Piano F1</title>
+<meta name="description" content="A piano instrument that computes and generates its sound in real time, right in your browser.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Physical Modeling Piano F1">
+<meta property="og:title" content="Physical Modeling Piano F1">
+<meta property="og:description" content="A piano instrument that computes and generates its sound in real time, right in your browser.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Physical Modeling Piano F1">
+<meta name="twitter:description" content="A piano instrument that computes and generates its sound in real time, right in your browser.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Physical Modeling Piano F1</h1>
+  <p class="sub">A piano instrument that computes and generates its sound in real time, right in your browser.</p>
+</header>
+
+<main>
+  <section id="start" class="card start">
+    <button id="startBtn" type="button" class="primary" autofocus>Start Playing</button>
+    <p id="startMsg" class="hint" role="status"></p>
+  </section>
+
+  <div id="app" hidden>
+  <section class="card" aria-label="Performance">
+    <div class="status">
+      <div class="octave">
+        <span class="label">Octave</span>
+        <button id="octaveDown" type="button" aria-label="Octave down" aria-keyshortcuts="ArrowDown"><span class="icon" aria-hidden="true">▼</span> <kbd aria-hidden="true">↓</kbd></button>
+        <output id="octaveOut" aria-live="polite">C3</output>
+        <button id="octaveUp" type="button" aria-label="Octave up" aria-keyshortcuts="ArrowUp"><span class="icon" aria-hidden="true">▲</span> <kbd aria-hidden="true">↑</kbd></button>
+      </div>
+      <div class="velocity">
+        <label class="label" for="velocity">Velocity</label>
+        <kbd aria-hidden="true">←</kbd>
+        <input id="velocity" type="range" min="0.05" max="1" step="0.01" value="0.6" aria-keyshortcuts="ArrowLeft ArrowRight">
+        <kbd aria-hidden="true">→</kbd>
+        <output id="velocityOut" for="velocity"></output>
+      </div>
+      <button id="pedalBtn" type="button" aria-pressed="false" aria-keyshortcuts="Shift">Sustain Pedal <kbd aria-hidden="true">Shift</kbd></button>
+      <button id="allOff" type="button" aria-keyshortcuts="Escape">All Notes Off <kbd aria-hidden="true">Esc</kbd></button>
+    </div>
+    <!-- Plain spans, not <output>: these change on every key press and must not be announced. -->
+    <div class="status meters">
+      <div><span class="label">Sounding</span><span id="voicesOut" class="value">0 keys / 0 strings</span></div>
+      <div><span class="label">Output level</span><meter id="level" min="0" max="1" low="0.5" high="0.85" optimum="0.3" value="0" aria-hidden="true"></meter></div>
+      <div id="loadBox" hidden><span class="label">DSP load</span><span id="loadOut" class="value">–</span></div>
+    </div>
+    <p id="dropoutMsg" class="hint warn" role="status" hidden>Audio dropouts detected: this device is having trouble keeping up. In Advanced Settings, try the buffer setting “balanced” or “playback”.</p>
+    <div id="keyboard" class="keyboard" role="group" aria-label="88-key keyboard"></div>
+    <div class="player" role="group" aria-label="MIDI file playback">
+      <button id="songOpen" type="button">Open MIDI File <kbd id="songKey" aria-hidden="true">⌘U</kbd></button>
+      <button id="songPlay" type="button" aria-keyshortcuts="Space" disabled><span class="icon" aria-hidden="true">▶</span> Play <kbd aria-hidden="true">Space</kbd></button>
+      <button id="songStop" type="button" disabled><span class="icon" aria-hidden="true">■</span> Stop</button>
+      <button id="songRepeat" type="button" aria-pressed="false"><span class="icon" aria-hidden="true">🔁</span> Repeat</button>
+      <span class="bpm"><span class="label">BPM</span> <span id="songBpm">–</span></span>
+      <output id="songInfo" aria-live="polite">No MIDI file selected</output>
+      <span id="songPos" class="pos"></span>
+      <input id="songFile" type="file" accept=".mid,.midi,.rmi,audio/midi,audio/x-midi" hidden>
+    </div>
+    <p class="actions"><button id="advancedBtn" type="button" aria-haspopup="dialog">Advanced Settings</button></p>
+  </section>
+
+  <section class="card" aria-labelledby="demoHeading">
+    <h2 id="demoHeading">Demo Songs</h2>
+    <ul id="demoList" class="demos"></ul>
+    <p class="hint">The demo songs are public domain MIDI data distributed by the <a href="https://www.mutopiaproject.org/" target="_blank" rel="noopener">Mutopia Project</a>.</p>
+  </section>
+  </div>
+</main>
+
+<dialog id="advanced" aria-labelledby="advancedTitle" closedby="any">
+  <div class="dialog-head">
+    <h2 id="advancedTitle">Advanced Settings</h2>
+    <form method="dialog"><button autofocus>Close</button></form>
+  </div>
+  <h3>Parameters</h3>
+  <div class="controls">
+    <label>Reference pitch (A4) <input id="tuning" type="number" min="400" max="480" step="0.1" value="440" inputmode="decimal" aria-describedby="tuningRange"> Hz <span id="tuningRange" class="range">400–480</span></label>
+    <label>Volume <input id="volume" type="range" min="0" max="1" step="0.01" value="0.5"><output id="volumeOut"></output></label>
+    <label>Hammer hardness <input id="hardness" type="range" min="0.3" max="3" step="0.05" value="0.45"><output id="hardnessOut"></output></label>
+    <label>Room reverb <input id="room" type="range" min="0" max="1" step="0.01" value="0.30"><output id="roomOut"></output></label>
+    <label>Key strike / release noise <input id="knock" type="range" min="0" max="2" step="0.05" value="0.8"><output id="knockOut"></output></label>
+    <label>Longitudinal string vibration <input id="longi" type="range" min="0" max="2" step="0.05" value="1"><output id="longiOut"></output></label>
+    <label>String resonance <input id="sympathetic" type="range" min="0" max="1" step="0.05" value="1"><output id="sympatheticOut"></output></label>
+    <label>Bass emphasis <input id="bass" type="range" min="0" max="1" step="0.01" value="0"><output id="bassOut"></output></label>
+    <label class="check"><input id="leveling" type="checkbox" checked> Loudness leveling (adjusts velocity so every key sounds as loud as the middle register)</label>
+    <label>Buffer setting
+      <select id="latencyHint">
+        <option value="0" selected>Minimum (latencyHint: 0)</option>
+        <option value="interactive">interactive</option>
+        <option value="balanced">balanced</option>
+        <option value="playback">playback</option>
+      </select>
+    </label>
+    <label>Sample rate
+      <select id="sampleRate">
+        <option value="0" selected>Automatic (device rate, at most 48 kHz)</option>
+        <option value="44100">44.1 kHz</option>
+        <option value="48000">48 kHz</option>
+        <option value="96000">96 kHz (2× load)</option>
+      </select>
+    </label>
+    <button id="midiBtn" type="button">Enable MIDI Input</button>
+  </div>
+  <h3 id="statsTitle">Statistics</h3>
+  <table class="lat">
+    <tbody>
+      <tr><th scope="row">Sample rate / render quantum</th><td id="latSr">–</td></tr>
+      <tr><th scope="row">baseLatency (inside the AudioContext)</th><td id="latBase">–</td></tr>
+      <tr><th scope="row">outputLatency (output device)</th><td id="latOut">–</td></tr>
+      <tr><th scope="row">Key event → handler</th><td id="latInput">–</td></tr>
+      <tr><th scope="row">Handler → worklet → reply round trip (upper bound until rendering starts)</th><td id="latSched">–</td></tr>
+      <tr><th scope="row">Rendering → speaker output (measured)</th><td id="latLag">–</td></tr>
+      <tr><th scope="row">Key event → speaker output (estimated)</th><td id="latTotal">–</td></tr>
+      <tr><th scope="row">Underruns</th><td id="latUnderrun">–</td></tr>
+    </tbody>
+  </table>
+  <p class="hint">While you play, the median / 95th percentile of the last 50 key presses is shown. The “estimated” value is based on <code>AudioContext.getOutputTimestamp()</code> and does not include the scan delay of the keyboard itself or USB/Bluetooth delay.</p>
+  <button id="latCopy" type="button">Copy Measurements</button>
+</dialog>
+
+<script type="module" src="main.js"></script>
+</body>
+</html>
