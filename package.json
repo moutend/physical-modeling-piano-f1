@@ -1,0 +1,12 @@
+{
+  "name": "physical-modeling-piano-f1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "serve": "node tools/serve.mjs 8080",
+    "deploy": "cf deploy web"
+  },
+  "devDependencies": {
+    "cf": "^1.0.0-rc.2"
+  }
+}
